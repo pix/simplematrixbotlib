@@ -43,6 +43,13 @@ class Config:
     
     def to_dict(self) -> dict:
         return dict(self._dict)
+    
+    def from_env(self, _dict:dict):
+        return self.__class__(defaults={
+                **self._dict, 
+                **{setting:os.environ[var] for (setting, var) in _dict.items()}
+            })
+            
 
 @dataclass
 class LegacyConfig:
