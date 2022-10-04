@@ -34,8 +34,25 @@ def _check_set_regex(value: Set[str]) -> Union[Set[re.Pattern], None]:
     return new_list
 
 
-@dataclass
 class Config:
+    def __init__(self, defaults:dict={}) -> None:
+        self._dict = defaults
+    
+    def from_dict(self, _dict:dict):
+        return self.__class__(defaults={**self._dict, **_dict})
+    
+    def to_dict(self) -> dict:
+        return dict(self._dict)
+    
+    def from_env(self, _dict:dict):
+        return self.__class__(defaults={
+                **self._dict, 
+                **{setting:os.environ[var] for (setting, var) in _dict.items()}
+            })
+            
+
+@dataclass
+class LegacyConfig:
     """
     A class to handle built-in user-configurable settings, including support for saving to and loading from a file.
     Can be inherited from by bot developers to implement custom settings.
