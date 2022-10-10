@@ -31,6 +31,7 @@ python-cryptography-fernet-wrapper = ">=1.0.4"
 pillow = ">=8.2"
 markdown = ">=3.3"
 toml = "^0.10.2"
+sly = "^0.4"
 
 [tool.poetry.dev-dependencies]
 wheel = "^0.37.0"
