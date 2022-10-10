@@ -20,7 +20,6 @@ class RuleLexer(Lexer):
     CHAR = r'[\S]'
     
 class RuleParser(Parser):
-    debugfile = 'parser.out'
     tokens = RuleLexer.tokens
 
     @_('arg')
