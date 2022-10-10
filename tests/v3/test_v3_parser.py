@@ -16,6 +16,11 @@ def test_parser():
     parsed = botlib.parse(input_=message, rule=rule)
     assert parsed == {'arg1':'foo', 'arg2':'bar', 'arg3':'spam eggs'}
 
+    message = "echo \"foo spam\" something bar something spam eggs"
+    rule = "echo <arg1> something <arg2> something <arg3 *>"
+    parsed = botlib.parse(input_=message, rule=rule)
+    assert parsed == {'arg1':'foo spam', 'arg2':'bar', 'arg3':'spam eggs'}
+
     message = "anything"
     rule = "<arg *> <*>"
     try:
