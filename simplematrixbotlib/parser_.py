@@ -1,5 +1,10 @@
+# type: ignore
+# mypy appears to be incompatible with sly
+import shlex
 from sly import Lexer, Parser
 from dataclasses import dataclass
+
+class ParseError(ValueError): pass
 
 @dataclass
 class Arg:
@@ -67,4 +72,28 @@ def parse(input_:str, rule:str) -> dict:
             formatted.append(data)
     un_nest(parser.parse(lexer.tokenize(rule)))
 
-    return formatted
+    words = shlex.split(input_)
+
+    if len(words) != len(formatted) :
+        if isinstance(formatted[-1], Arg) and formatted[-1].remainder:
+            pass
+        else:
+            return {}
+
+    output = {}
+
+    remainder_count = 0
+    for i in range(len(formatted)):
+        if isinstance(formatted[i], Chars):
+            if not formatted[i].content == words[i]:
+                return {}
+        if isinstance(formatted[i], Arg):
+            if formatted[i].remainder:
+                remainder_count += 1
+                if formatted[i].name:
+                    output[formatted[i].name.content] = " ".join(words[i:])
+            else:
+                output[formatted[i].name] = words[i]
+        if remainder_count > 1:
+            raise ParseError("Only one remainder argument/placeholder (<*> or <arg *>) allowed in rule!")
+    return output
