@@ -17,8 +17,8 @@ def test_listener():
         pass
     assert True
 
-    @botlib.on_startup
-    async def startup_handler():
+    @botlib.on_start
+    async def start_handler():
         pass
     assert True
 
