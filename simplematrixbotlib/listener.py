@@ -1,7 +1,27 @@
 from nio import RoomMessageText, UnknownEvent
 
+def on_message(handler): 
+    return on_event(RoomMessageText)(handler)
 
-class Listener:
+def on_reaction(handler):
+    handler._on_reaction = True
+    return handler
+
+def on_event(event):
+    def wrapped(handler):
+        handler._on_event = event
+        return handler
+    return wrapped
+
+def on_start(handler):
+    handler._on_start = True
+    return handler
+
+def on_end(handler):
+    handler._on_end = True
+    return handler
+
+class LegacyListener:
 
     def __init__(self, bot):
         self._bot = bot
