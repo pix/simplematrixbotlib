@@ -265,6 +265,34 @@ class Api:
                                                         extensions=['nl2br'])
                               })
 
+    async def send_reaction(self, room_id: str, event, key: str):
+        """
+        Send a reaction to a message in a Matrix room.
+
+        Parameters
+        ----------
+        room_id : str
+            The room id of the destination of the message.
+
+        event :
+            The event object you want to react to.
+
+        key: str
+            The content of the reaction. This is usually an emoji, but may technically be any text.
+        """
+
+        await self._send_room(
+            room_id=room_id,
+            content={
+                "m.relates_to": {
+                    "event_id": event.event_id,
+                    "key": key,
+                    "rel_type": "m.annotation"
+                }
+            },
+            message_type="m.reaction"
+        )
+
     async def send_image_message(self, room_id, image_filepath):
         """
         Send an image message in a Matrix room.

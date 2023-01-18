@@ -21,6 +21,27 @@ async def example(room, message):
 ```
 The first two arguments are required. The room_id argument is the id of the destination room. The message argument is the string that is to be sent as a message. The msgtype argument can be "m.text" (default) or "m.notice".
 
+### Using the `send_reaction` method
+
+The `send_reaction` method of the Api class can be used to send reactions to messages in Matrix rooms.
+An example is shown in the following python code.
+
+```python
+async def example(room, message):
+    match = botlib.MessageMatch(room, message, bot)
+    example_reaction = "✅"
+    if match.is_not_from_this_bot():
+        await bot.api.send_reaction(
+            room_id=room.room_id,
+            event=message,
+            key=example_reaction)
+```
+
+All arguments are required.
+The `room_id` argument is the id of the destination room.
+The `event` argument is the event object that will get annotated with your reaction.
+The `key` argument is the content of the reaction. This is usually an emoji, but may technically be any text.
+
 ### Using the send_image_message method
 The send_image_message method of the Api class can be used to send image messages in Matrix rooms. An example is shown in the following python code.
 ```python
