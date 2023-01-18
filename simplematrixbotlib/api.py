@@ -1,6 +1,5 @@
 import json
-import asyncio
-from nio import (AsyncClient, SyncResponse, RoomMessageText, AsyncClientConfig)
+from nio import (AsyncClient, AsyncClientConfig)
 from nio.exceptions import OlmUnverifiedDeviceError
 from nio.responses import UploadResponse
 import nio
@@ -12,6 +11,7 @@ import markdown
 import aiohttp
 from typing import List, Tuple, Union
 import re
+import simplematrixbotlib
 
 
 async def check_valid_homeserver(homeserver: str) -> bool:
@@ -53,16 +53,19 @@ class Api:
     Attributes
     ----------
     creds : simplematrixbotlib.Creds
+    config : simplematrixbotlib.Config
+    async_client : simplematrixbotlib.AsyncClient
 
     """
 
-    def __init__(self, creds, config):
+    def __init__(self, creds: simplematrixbotlib.Creds, config: simplematrixbotlib.Config):
         """
         Initializes the simplematrixbotlib.Api class.
 
         Parameters
         ----------
         creds : simplematrixbotlib.Creds
+        config : simplematrixbotlib.Config
 
         """
         self.creds = creds
@@ -82,7 +85,8 @@ class Api:
         if not (self.creds.password or self.creds.login_token
                 or self.creds.access_token):
             raise ValueError(
-                "Missing password, login token, access token. Either password, login token or access token must be provided"
+                "Missing password, login token, access token. "
+                "Either password, login token or access token must be provided"
             )
 
         client_config = AsyncClientConfig(
@@ -103,7 +107,7 @@ class Api:
 
             async with aiohttp.ClientSession() as session:
                 async with session.get(
-                        f'{self.creds.homeserver}/_matrix/client/r0/account/whoami?access_token={self.creds.access_token}'
+                    f'{self.creds.homeserver}/_matrix/client/r0/account/whoami?access_token={self.creds.access_token}'
                 ) as response:
                     if isinstance(response, nio.responses.LoginError):
                         raise Exception(response)
@@ -176,10 +180,29 @@ class Api:
             await self.async_client.keys_upload()
 
     async def _send_room(self,
-                         room_id,
-                         content,
-                         message_type="m.room.message",
-                         ignore_unverified_devices=None):
+                         room_id: str,
+                         content: dict,
+                         message_type: str = "m.room.message",
+                         ignore_unverified_devices: bool = None):
+        """
+        Send a custom event in a Matrix room.
+
+        Parameters
+        -----------
+        room_id : str
+            The room id of the destination of the message.
+
+        content : dict
+            The content block of the event to be sent.
+
+        message_type : str, optional
+            The type of event to send, default m.room.message.
+
+        ignore_unverified_devices : bool, optional
+            Whether to ignore that devices are not verified and send the
+            message to them regardless on a per-message basis.
+        """
+
         try:
             await self.async_client.room_send(
                 room_id=room_id,
@@ -213,11 +236,11 @@ class Api:
                 ignore_unverified_devices=ignore_unverified_devices
                                           or self.config.ignore_unverified_devices)
 
-    async def send_text_message(self, room_id, message, msgtype='m.text'):
+    async def send_text_message(self, room_id: str, message: str, msgtype: str = "m.text"):
         """
         Send a text message in a Matrix room.
 
-        Parameteres
+        Parameters
         -----------
         room_id : str
             The room id of the destination of the message.
@@ -227,19 +250,19 @@ class Api:
 
         msgtype : str, optional
             The type of message to send: m.text (default), m.notice, etc
-
         """
+
         await self._send_room(room_id=room_id,
                               content={
                                   "msgtype": msgtype,
                                   "body": message
                               })
 
-    async def send_markdown_message(self, room_id, message, msgtype='m.text'):
+    async def send_markdown_message(self, room_id: str, message, msgtype: str = "m.text"):
         """
         Send a markdown message in a Matrix room.
 
-        Parameteres
+        Parameters
         -----------
         room_id : str
             The room id of the destination of the message.
@@ -249,33 +272,28 @@ class Api:
 
         msgtype : str, optional
             The type of message to send: m.text (default), m.notice, etc
-
         """
 
         await self._send_room(room_id=room_id,
                               content={
-                                  "msgtype":
-                                      msgtype,
-                                  "body":
-                                      message,
-                                  "format":
-                                      "org.matrix.custom.html",
-                                  "formatted_body":
-                                      markdown.markdown(message,
-                                                        extensions=['nl2br'])
+                                  "msgtype": msgtype,
+                                  "body": message,
+                                  "format": "org.matrix.custom.html",
+                                  "formatted_body": markdown.markdown(message,
+                                                                      extensions=['nl2br'])
                               })
 
-    async def send_image_message(self, room_id, image_filepath):
+    async def send_image_message(self, room_id: str, image_filepath: str):
         """
         Send an image message in a Matrix room.
 
-        Parameteres
+        Parameters
         -----------
         room_id : str
             The room id of the destination of the message.
 
         image_filepath : str
-            The path to the image on your machien.
+            The path to the image on your machine.
         """
 
         mime_type = mimetypes.guess_type(image_filepath)[0]
@@ -314,7 +332,7 @@ class Api:
         except:
             print(f"Failed to send image file {image_filepath}")
 
-    async def send_video_message(self, room_id, video_filepath):
+    async def send_video_message(self, room_id: str, video_filepath: str):
         """
         Send a video message in a Matrix room.
 
@@ -338,7 +356,7 @@ class Api:
                 filesize=file_stat.st_size)
 
         if isinstance(resp, UploadResponse):
-            pass # Successful upload
+            pass  # Successful upload
         else:
             print(f"Failed Upload Response: {resp}")
 
@@ -352,9 +370,8 @@ class Api:
             "msgtype": "m.video",
             "url": resp.content_uri
         }
-        
+
         try:
             await self._send_room(room_id=room_id, content=content)
         except:
             print(f"Failed to send video file {video_filepath}")
-
