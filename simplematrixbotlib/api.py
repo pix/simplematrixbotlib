@@ -311,7 +311,7 @@ class Api:
             message_type="m.reaction"
         )
 
-    async def send_image_message(self, room_id, image_filepath):
+    async def send_image_message(self, room_id: str, image_filepath: str):
         """
         Send an image message in a Matrix room.
 
