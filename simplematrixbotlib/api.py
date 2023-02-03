@@ -1,3 +1,4 @@
+from __future__ import annotations
 import json
 from nio import (AsyncClient, AsyncClientConfig)
 from nio.exceptions import OlmUnverifiedDeviceError
