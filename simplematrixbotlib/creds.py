@@ -25,12 +25,12 @@ class Creds:
     def from_password(self, password):
         self._dict['access_token'] = asyncio.get_event_loop().run_until_complete(
             self._get_access_token(password=password))
-        return str(self._dict)
+        return self._dict
     
     def from_login_token(self, login_token):
         self._dict['access_token'] = asyncio.get_event_loop().run_until_complete(
             self._get_access_token(login_token=login_token))
-        return str(self._dict)
+        return self._dict
 
     def from_access_token(self, access_token):
         async def confirm_access_token():
@@ -41,7 +41,7 @@ class Creds:
                         if json.loads((await resp.text()).replace(":false,", ":\"false\",")
                         )['user_id'] == self._dict['user_id']:
                             self._dict['access_token'] = access_token
-                            return str(self._dict)
+                            return self._dict
                         else:
                             raise CredsError(f"Failed to confirm access_token: {resp=}")
         return asyncio.get_event_loop().run_until_complete(confirm_access_token())             
