@@ -128,10 +128,26 @@ class Bot:
 
         print(f"Connected ({self.__class__.__name__}) to {creds['homeserver']} as {client.user_id} ({creds['device_id']})")
 
+        return client
+
+
+    async def startup(self, client: AsyncClient):
+        print(f"Syncing {self.__class__.__name__}...")
+        resp = await client.sync(timeout=65536, full_state=False)
+
+        if isinstance(resp, SyncResponse):
+            print(f"Sync Successful ({self.__class__.__name__}) !")
+
+        for name, value in self.__class__.__dict__.items():
+            if hasattr(value, '_on_start'):
+                print(f"Running {self.__class__.__name__}.{name}")
+                await value(self)
+
 
     async def run(self, config: Config):
         """
         Runs the bot.
 
         """
-        await self.login(config=config)
+        client = await self.login(config=config)
+        await self.startup(client=client)
