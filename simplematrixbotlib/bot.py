@@ -14,11 +14,22 @@ from nio import SyncResponse, AsyncClient
 if typing.TYPE_CHECKING:
     from simplematrixbotlib import Config
 
+_BOT_COUNT = 0
 
 def run(config: Config, bots: List[Bot]):
     loop = asyncio.get_event_loop()
-    bot_group = asyncio.gather(*[bot().run(config) for bot in bots])
+    bot_group = asyncio.gather(*[bot().run(config) for bot in bots], bot_count_check())
     loop.run_until_complete(bot_group)
+
+async def bot_count_check():
+    while True:
+        if not _BOT_COUNT:
+            stop()
+        await asyncio.sleep(0)
+
+def stop(*args):
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
+    exit(0)
 
 class Bot:
     """
@@ -140,8 +151,21 @@ class Bot:
 
         for name, value in self.__class__.__dict__.items():
             if hasattr(value, '_on_start'):
-                print(f"Running {self.__class__.__name__}.{name}")
                 await value(self)
+
+    async def stop(self, client: AsyncClient = None):
+        if not client:
+            client = self._client
+        print(f"Stopping {self.__class__.__name__}...")
+
+        for name, value in self.__class__.__dict__.items():
+            if hasattr(value, '_on_end'):
+                await value(self)
+
+        global _BOT_COUNT
+        _BOT_COUNT -= 1
+
+        await client.close()
 
 
     async def run(self, config: Config):
@@ -149,5 +173,12 @@ class Bot:
         Runs the bot.
 
         """
+        global _BOT_COUNT
+        _BOT_COUNT += 1
+        signal.signal(signal.SIGINT, stop)
+
         client = await self.login(config=config)
+        self._client = client
+
         await self.startup(client=client)
+        await client.sync_forever(timeout=3000, full_state=True)
