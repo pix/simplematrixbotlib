@@ -1,9 +1,24 @@
+from __future__ import annotations
 import asyncio
+import json
 import sys
-from typing import Optional
+import typing
+from typing import Optional, List
+
+import aiohttp
+import nio
+
 import simplematrixbotlib as botlib
 from nio import SyncResponse, AsyncClient
 
+if typing.TYPE_CHECKING:
+    from simplematrixbotlib import Config
+
+
+def run(config: Config, bots: List[Bot]):
+    loop = asyncio.get_event_loop()
+    bot_group = asyncio.gather(*[bot().run(config) for bot in bots])
+    loop.run_until_complete(bot_group)
 
 class Bot:
     """
@@ -18,7 +33,7 @@ class Bot:
     
     """
 
-    def __init__(self, creds, config=None):
+    def __init__(self):
         """
         Initializes the simplematrixbotlib.Bot class.
 
@@ -28,17 +43,17 @@ class Bot:
 
         """
 
-        self.creds = creds
-        if config:
-            self.config = config
-            self._need_allow_homeserver_users = False
-        else:
-            self._need_allow_homeserver_users = True
-            self.config = botlib.Config()
-        self.api = botlib.Api(self.creds, self.config)
-        self.listener = botlib.Listener(self)
-        self.async_client: AsyncClient = None
-        self.callbacks: botlib.Callbacks = None
+        #self.creds = creds
+        #if config:
+        #    self.config = config
+        #    self._need_allow_homeserver_users = False
+        #else:
+        #    self._need_allow_homeserver_users = True
+        #    self.config = botlib.Config()
+        #self.api = botlib.Api(self.creds, self.config)
+        #self.listener = botlib.Listener(self)
+        #self.async_client: AsyncClient = None
+        #self.callbacks: botlib.Callbacks = None
 
     async def main(self):
         self.creds.session_read_file()
@@ -80,9 +95,43 @@ class Bot:
 
         await self.async_client.sync_forever(timeout=3000, full_state=True)
 
-    def run(self):
+    async def login(self, config):
+        creds = config.to_dict()['creds']
+        client = AsyncClient(homeserver=creds['homeserver'])
+        client.access_token = creds['access_token']
+
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                    f'{creds["homeserver"]}/_matrix/client/r0/account/whoami?access_token={creds["access_token"]}'
+            ) as response:
+                if isinstance(response, nio.responses.LoginError):
+                    raise Exception(response)
+
+                r = json.loads(
+                    (await
+                     response.text()).replace(":false,", ":\"false\","))
+
+                creds['device_id'] = r['device_id']
+                client.user_id = r['user_id']
+
+                if not client.user_id == creds['user_id']:
+                    raise ValueError(
+                        f"Given Matrix user id \'{creds['user_id']}\' does not match the user id \'{client.user_id}\' associated with the access token. "
+                        "This error prevents you from accidentally using the wrong account. "
+                        "Resolve this by providing the correct user id with your credentials, "
+                        #f"or reset your session by deleting {self.creds._session_stored_file}"
+                        #f"{' and ' + self.config.store_path if self.config.encryption_enabled else ''}."
+                    )
+
+        if client.should_upload_keys:
+            await client.keys_upload()
+
+        print(f"Connected ({self.__class__.__name__}) to {creds['homeserver']} as {client.user_id} ({creds['device_id']})")
+
+
+    async def run(self, config: Config):
         """
         Runs the bot.
 
         """
-        asyncio.run(self.main())
+        await self.login(config=config)

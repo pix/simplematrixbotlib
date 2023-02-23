@@ -1,6 +1,6 @@
 from simplematrixbotlib.api import Api
 from simplematrixbotlib.creds import Creds
-from simplematrixbotlib.bot import Bot
+from simplematrixbotlib.bot import Bot, run
 from simplematrixbotlib.callbacks import Callbacks
 from simplematrixbotlib.match import MessageMatch
 from simplematrixbotlib.listener import on_message, on_reaction, on_event, on_start, on_end
