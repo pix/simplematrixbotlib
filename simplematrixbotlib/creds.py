@@ -5,12 +5,12 @@ from nio import AsyncClient, LoginResponse
 class CredsError(Exception): pass
 
 class Creds:
-    def __init__(self, homeserver, user_id):
-        self._dict = {'homeserver': homeserver, 'user_id':user_id}
+    def __init__(self, homeserver, user_id, device_name='simplematrixbotlib'):
+        self._dict = {'homeserver': homeserver, 'user_id':user_id, 'device_name':device_name}
     
     async def _get_access_token(self, password=None, login_token=None):
         client = AsyncClient(self._dict['homeserver'], self._dict['user_id'])
-        device_name = 'simplematrixbotlib'
+        device_name = self._dict["device_name"]
         if password:
             resp = (await client.login(password=password, device_name=device_name))
         elif login_token:
