@@ -1,8 +1,10 @@
 from __future__ import annotations
 import asyncio
 import json
+import signal
 import sys
 import typing
+from functools import partial
 from typing import Optional, List
 
 import aiohttp
@@ -167,6 +169,12 @@ class Bot:
 
         await client.close()
 
+    async def setup_callbacks(self, config: Config, client: AsyncClient):
+        for name, value in self.__class__.__dict__.items():
+            if hasattr(value, '_on_event'):
+                event = value._on_event
+                value = partial(value, self)
+                client.add_event_callback(value, event)
 
     async def run(self, config: Config):
         """
@@ -181,4 +189,5 @@ class Bot:
         self._client = client
 
         await self.startup(client=client)
+        await self.setup_callbacks(config=config, client=client)
         await client.sync_forever(timeout=3000, full_state=True)
