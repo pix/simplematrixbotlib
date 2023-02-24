@@ -1,7 +1,8 @@
 import nio.events.room_events
 import nio.events.to_device
 from nio import InviteMemberEvent
-from nio import MegolmEvent, KeyVerificationStart, KeyVerificationCancel, KeyVerificationKey, KeyVerificationMac, ToDeviceError, KeyVerificationEvent
+from nio import MegolmEvent, KeyVerificationStart, KeyVerificationCancel, KeyVerificationKey, KeyVerificationMac, \
+    ToDeviceError, KeyVerificationEvent
 
 
 class Callbacks:
@@ -30,7 +31,7 @@ class Callbacks:
 
         if self.bot.config.emoji_verify:
             self.async_client.add_to_device_callback(self.emoji_verification,
-                                                     (KeyVerificationEvent, ))
+                                                     (KeyVerificationEvent,))
 
         for event_listener in self.bot.listener._registry:
             if issubclass(event_listener[1], nio.events.room_events.Event):
@@ -90,8 +91,8 @@ class Callbacks:
             "You will have to verify any verified devices anew.")
         await self.bot.api.send_text_message(
             room.room_id, "Failed to decrypt your message. "
-            "Make sure encryption is enabled in my config and "
-            "either enable sending messages to unverified devices or verify me if possible.",
+                          "Make sure encryption is enabled in my config and "
+                          "either enable sending messages to unverified devices or verify me if possible.",
             msgtype='m.notice')
 
     async def emoji_verification(self, event):

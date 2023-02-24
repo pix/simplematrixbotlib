@@ -1,8 +1,9 @@
-from dataclasses import dataclass, field, fields, asdict
 import os.path
-import toml
 import re
+from dataclasses import dataclass, field, fields, asdict
 from typing import Set, Union
+
+import toml
 from nio.crypto import ENCRYPTION_ENABLED
 
 
@@ -10,8 +11,8 @@ def _config_dict_factory(tmp) -> dict:
     return {
         'simplematrixbotlib': {
             'config':
-            {_strip_leading_underscore(name): value
-             for name, value in tmp}
+                {_strip_leading_underscore(name): value
+                 for name, value in tmp}
         }
     }
 
@@ -35,21 +36,21 @@ def _check_set_regex(value: Set[str]) -> Union[Set[re.Pattern], None]:
 
 
 class Config:
-    def __init__(self, defaults:dict={}) -> None:
+    def __init__(self, defaults: dict = {}) -> None:
         self._dict = defaults
-    
-    def from_dict(self, _dict:dict):
+
+    def from_dict(self, _dict: dict):
         return self.__class__(defaults={**self._dict, **_dict})
-    
+
     def to_dict(self) -> dict:
         return dict(self._dict)
-    
-    def from_env(self, _dict:dict):
+
+    def from_env(self, _dict: dict):
         return self.__class__(defaults={
-                **self._dict, 
-                **{setting:os.environ[var] for (setting, var) in _dict.items()}
-            })
-            
+            **self._dict,
+            **{setting: os.environ[var] for (setting, var) in _dict.items()}
+        })
+
 
 @dataclass
 class LegacyConfig:

@@ -1,17 +1,17 @@
 import json
-import asyncio
-from nio import (AsyncClient, SyncResponse, RoomMessageText, AsyncClientConfig)
-from nio.exceptions import OlmUnverifiedDeviceError
-from nio.responses import UploadResponse
-import nio
-from PIL import Image
-import aiofiles.os
 import mimetypes
 import os
-import markdown
-import aiohttp
-from typing import List, Tuple, Union
 import re
+from typing import List, Tuple, Union
+
+import aiofiles.os
+import aiohttp
+import markdown
+import nio
+from PIL import Image
+from nio import (AsyncClient, AsyncClientConfig)
+from nio.exceptions import OlmUnverifiedDeviceError
+from nio.responses import UploadResponse
 
 
 async def check_valid_homeserver(homeserver: str) -> bool:
@@ -180,7 +180,7 @@ class Api:
                 message_type=message_type,
                 content=content,
                 ignore_unverified_devices=ignore_unverified_devices
-                or self.config.ignore_unverified_devices)
+                                          or self.config.ignore_unverified_devices)
         except OlmUnverifiedDeviceError as e:
             # print(str(e))
             print(
@@ -191,10 +191,10 @@ class Api:
             for user in self.async_client.rooms[room_id].users:
                 unverified: List[str] = list()
                 for device_id, device in self.async_client.olm.device_store[
-                        user].items():
+                    user].items():
                     if not (self.async_client.olm.is_device_verified(device) or
                             self.async_client.olm.is_device_blacklisted(device)
-                            ):
+                    ):
                         self.async_client.olm.blacklist_device(device)
                         unverified.append(device_id)
                 if len(unverified) > 0:
@@ -205,7 +205,7 @@ class Api:
                 message_type=message_type,
                 content=content,
                 ignore_unverified_devices=ignore_unverified_devices
-                or self.config.ignore_unverified_devices)
+                                          or self.config.ignore_unverified_devices)
 
     async def send_text_message(self, room_id, message, msgtype='m.text'):
         """
@@ -249,14 +249,14 @@ class Api:
         await self._send_room(room_id=room_id,
                               content={
                                   "msgtype":
-                                  msgtype,
+                                      msgtype,
                                   "body":
-                                  message,
+                                      message,
                                   "format":
-                                  "org.matrix.custom.html",
+                                      "org.matrix.custom.html",
                                   "formatted_body":
-                                  markdown.markdown(message,
-                                                    extensions=['nl2br'])
+                                      markdown.markdown(message,
+                                                        extensions=['nl2br'])
                               })
 
     async def send_image_message(self, room_id, image_filepath):
@@ -285,7 +285,7 @@ class Api:
                 filename=os.path.basename(image_filepath),
                 filesize=file_stat.st_size)
         if isinstance(resp, UploadResponse):
-            pass  #Successful upload
+            pass  # Successful upload
         else:
             print(f"Failed Upload Response: {resp}")
 
@@ -332,7 +332,7 @@ class Api:
                 filesize=file_stat.st_size)
 
         if isinstance(resp, UploadResponse):
-            pass # Successful upload
+            pass  # Successful upload
         else:
             print(f"Failed Upload Response: {resp}")
 
@@ -346,9 +346,8 @@ class Api:
             "msgtype": "m.video",
             "url": resp.content_uri
         }
-        
+
         try:
             await self._send_room(room_id=room_id, content=content)
         except:
             print(f"Failed to send video file {video_filepath}")
-
