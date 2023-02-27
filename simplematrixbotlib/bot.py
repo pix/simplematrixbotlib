@@ -9,7 +9,7 @@ from typing import List
 
 import aiohttp
 import nio
-from nio import SyncResponse, AsyncClient
+from nio import SyncResponse, AsyncClient, UnknownEvent
 
 import simplematrixbotlib as botlib
 
@@ -179,6 +179,16 @@ class Bot:
                 event = value._on_event
                 value = partial(value, self)
                 client.add_event_callback(value, event)
+
+            if hasattr(value, '_on_reaction'):
+                value = partial(value, self)
+                def check_type(func):
+                    async def wrapper(room, event_):
+                        if event_.type == 'm.reaction':
+                            await func(room, event_, event_.source['content']['m.relates_to']['key'])
+                    return wrapper
+
+                client.add_event_callback(check_type(value), UnknownEvent)
 
     async def run(self, config: Config):
         """
