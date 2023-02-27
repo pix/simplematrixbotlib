@@ -4,6 +4,7 @@ from dataclasses import dataclass, field, fields, asdict
 from typing import Set, Union
 
 import toml
+from dotenv import load_dotenv
 from nio.crypto import ENCRYPTION_ENABLED
 
 
@@ -46,6 +47,7 @@ class Config:
         return dict(self._dict)
 
     def from_env(self, _dict: dict):
+        load_dotenv()
         return self.__class__(defaults={
             **self._dict,
             **{setting: os.environ[var] for (setting, var) in _dict.items()}
