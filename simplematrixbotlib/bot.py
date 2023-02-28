@@ -142,7 +142,10 @@ class Bot:
                     (await
                      response.text()).replace(":false,", ":\"false\","))
 
-                creds['device_id'] = r['device_id']
+                try:
+                    creds['device_id'] = r['device_id']
+                except KeyError:
+                    raise CredsError(f"Invalid Access Token. You may need to delete the directory located at {config.to_dict().get('preserve_session')} .")
                 client.user_id = r['user_id']
 
                 if not client.user_id == creds['user_id']:
