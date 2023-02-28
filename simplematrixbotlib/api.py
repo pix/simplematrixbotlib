@@ -1,7 +1,10 @@
+from __future__ import annotations
+
 import json
 import mimetypes
 import os
 import re
+import typing
 from typing import List, Tuple, Union
 
 import aiofiles.os
@@ -12,6 +15,9 @@ from PIL import Image
 from nio import (AsyncClient, AsyncClientConfig)
 from nio.exceptions import OlmUnverifiedDeviceError
 from nio.responses import UploadResponse
+
+if typing.TYPE_CHECKING:
+    from simplematrixbotlib import Config
 
 
 async def check_valid_homeserver(homeserver: str) -> bool:
@@ -45,6 +51,93 @@ def split_mxid(mxid: str) -> Union[Tuple[str, str], Tuple[None, None]]:
 
 
 class Api:
+    def __init__(self, config: Config, client: AsyncClient):
+        self.config = config
+        self.client = client
+
+    async def room_send(self, room_id: str, message_type: str, content: dict):
+        await self.client.room_send(room_id, message_type, content)
+
+    async def send_text(self, room_id: str, text: str, msgtype='m.text'):
+        await self.client.room_send(room_id,
+                                    message_type="m.room.message",
+                                    content={
+                                        "msgtype": msgtype,
+                                        "body": text
+                                    })
+
+    async def send_markdown(self, room_id: str, text: str, msgtype='m.text'):
+        await self.room_send(room_id,
+                             message_type="m.room.message",
+                             content={
+                                 "msgtype": msgtype,
+                                 "body": text,
+                                 "format": "org.matrix.custom.html",
+                                 "formatted_body": markdown.markdown(
+                                     text, extensions=['nl2br'])
+                             })
+
+    async def send_image(self, room_id, file_path: str):
+        content_type = mimetypes.guess_type(file_path)[0]
+        image = Image.open(file_path)
+        width, height = image.size
+        filename = os.path.basename(file_path)
+        filesize = (await aiofiles.os.stat(file_path)).st_size
+
+        async with aiofiles.open(file_path, 'r+b') as file:
+            resp, maybe_keys = await self.client.upload(
+                file,
+                content_type=content_type,
+                filename=filename,
+                filesize=filesize
+            )
+
+        if not isinstance(resp, UploadResponse):
+            print(f"Failed Upload Response: {resp}")
+
+        content = {
+            "body": filename,
+            "info": {
+                "size": filesize,
+                "mimetype": content_type,
+                "w": width,
+                "h": height,
+            },
+            "msgtype": "m.image",
+            "url": resp.content_uri
+        }
+
+        await self.room_send(room_id, "m.room.message", content)
+
+    async def send_video(self, room_id: str, file_path: str):
+        content_type = mimetypes.guess_type(file_path)[0]
+        filename = os.path.basename(file_path)
+        filesize = (await aiofiles.os.stat(file_path)).st_size
+
+        async with aiofiles.open(file_path, "r+b") as file:
+            resp, maybe_keys = await  self.client.upload(
+                file,
+                content_type=content_type,
+                filename=filename,
+                filesize=filesize
+            )
+
+        if not isinstance(resp, UploadResponse):
+            print(f"Failed Upload Response: {resp}")
+
+        content = {
+            "body": filename,
+            "info": {
+                "size": filesize,
+                "mimetype": content_type,
+            },
+            "msgtype": "m.video",
+            "url": resp.content_uri
+        }
+
+        await self.room_send(room_id, "m.room.message", content)
+
+class LegacyApi:
     """
     A class to interact with the matrix-nio library. Usually used by the Bot class, and sparingly by the bot developer.
 

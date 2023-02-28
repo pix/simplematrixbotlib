@@ -202,6 +202,8 @@ class Bot:
         client = await self.login(config=config)
         self._client = client
 
+        self.api = botlib.Api(config, client)
+
         await self.startup(client=client)
         await self.setup_callbacks(config=config, client=client)
         await client.sync_forever(timeout=3000, full_state=True)
