@@ -1,7 +1,10 @@
+from __future__ import annotations
+
 import json
 import mimetypes
 import os
 import re
+import typing
 from typing import List, Tuple, Union
 
 import aiofiles.os
@@ -12,6 +15,9 @@ from PIL import Image
 from nio import (AsyncClient, AsyncClientConfig)
 from nio.exceptions import OlmUnverifiedDeviceError
 from nio.responses import UploadResponse
+
+if typing.TYPE_CHECKING:
+    from simplematrixbotlib import Config
 
 
 async def check_valid_homeserver(homeserver: str) -> bool:
@@ -45,6 +51,22 @@ def split_mxid(mxid: str) -> Union[Tuple[str, str], Tuple[None, None]]:
 
 
 class Api:
+    def __init__(self, config: Config, client: AsyncClient):
+        self.config = config
+        self.client = client
+
+    async def room_send(self, room_id: str, message_type: str, content: dict):
+        await self.client.room_send(room_id, message_type, content)
+
+    async def send_text(self, room_id: str, text: str, msgtype='m.text'):
+        await self.client.room_send(room_id,
+                                    message_type="m.room.message",
+                                    content={
+                                        "msgtype": msgtype,
+                                        "body": text
+                                    })
+
+class LegacyApi:
     """
     A class to interact with the matrix-nio library. Usually used by the Bot class, and sparingly by the bot developer.
 
