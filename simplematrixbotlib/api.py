@@ -109,7 +109,33 @@ class Api:
 
         await self.room_send(room_id, "m.room.message", content)
 
+    async def send_video(self, room_id: str, file_path: str):
+        content_type = mimetypes.guess_type(file_path)[0]
+        filename = os.path.basename(file_path)
+        filesize = (await aiofiles.os.stat(file_path)).st_size
 
+        async with aiofiles.open(file_path, "r+b") as file:
+            resp, maybe_keys = await  self.client.upload(
+                file,
+                content_type=content_type,
+                filename=filename,
+                filesize=filesize
+            )
+
+        if not isinstance(resp, UploadResponse):
+            print(f"Failed Upload Response: {resp}")
+
+        content = {
+            "body": filename,
+            "info": {
+                "size": filesize,
+                "mimetype": content_type,
+            },
+            "msgtype": "m.video",
+            "url": resp.content_uri
+        }
+
+        await self.room_send(room_id, "m.room.message", content)
 
 class LegacyApi:
     """
