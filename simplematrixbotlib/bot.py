@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 import signal
 import typing
 from functools import partial
@@ -10,6 +11,7 @@ from typing import List
 import aiohttp
 import nio
 from nio import SyncResponse, AsyncClient, UnknownEvent
+from simplematrixbotlib.creds import CredsError
 
 import simplematrixbotlib as botlib
 
@@ -115,6 +117,18 @@ class Bot:
     async def login(self, config):
         creds = config.to_dict()['creds']
         client = AsyncClient(homeserver=creds['homeserver'])
+
+        if config.to_dict().get("preserve_session"):
+            try:
+                with open(config.to_dict().get("preserve_session")+"/token.txt", 'r') as file:
+                    if not creds.get("_from_access_token"):
+                        creds['access_token'] = file.read()
+            except FileNotFoundError:
+                os.mkdir(config.to_dict().get("preserve_session"))
+
+            with open(config.to_dict().get("preserve_session")+"/token.txt", 'w') as file:
+                file.write(creds['access_token'])
+
         client.access_token = creds['access_token']
 
         async with aiohttp.ClientSession() as session:
