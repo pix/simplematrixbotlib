@@ -66,6 +66,17 @@ class Api:
                                         "body": text
                                     })
 
+    async def send_markdown(self, room_id: str, text: str, msgtype='m.text'):
+        await self.room_send(room_id,
+                             message_type="m.room.message",
+                             content={
+                                 "msgtype": msgtype,
+                                 "body": text,
+                                 "format": "org.matrix.custom.html",
+                                 "formatted_body": markdown.markdown(
+                                     text, extensions=['nl2br'])
+                             })
+
 class LegacyApi:
     """
     A class to interact with the matrix-nio library. Usually used by the Bot class, and sparingly by the bot developer.
