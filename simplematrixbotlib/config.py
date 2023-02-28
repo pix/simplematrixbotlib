@@ -37,8 +37,10 @@ def _check_set_regex(value: Set[str]) -> Union[Set[re.Pattern], None]:
 
 
 class Config:
-    def __init__(self, defaults: dict = {}) -> None:
-        self._dict = defaults
+    def __init__(self, defaults: dict = None) -> None:
+        self._dict = defaults if defaults else {
+            "preserve_session": ".session"
+        }
 
     def from_dict(self, _dict: dict):
         return self.__class__(defaults={**self._dict, **_dict})
