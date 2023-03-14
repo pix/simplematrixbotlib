@@ -1,11 +1,13 @@
 from typing import Dict
 
-import simplematrixbotlib as botlib
 from nio import RoomMessageText
+
+import simplematrixbotlib as botlib
 
 
 def match(event: RoomMessageText, rule: str) -> Dict[str, str]:
     return botlib.parse(str(event.body), rule)
+
 
 class Match:
     """

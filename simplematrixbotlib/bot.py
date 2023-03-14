@@ -9,11 +9,10 @@ from functools import partial
 from typing import List
 
 import aiohttp
-import nio
 from nio import SyncResponse, AsyncClient, UnknownEvent
-from simplematrixbotlib.creds import CredsError
 
 import simplematrixbotlib as botlib
+from simplematrixbotlib.creds import CredsError
 
 if typing.TYPE_CHECKING:
     from simplematrixbotlib import Config
@@ -120,7 +119,7 @@ class Bot:
 
         if config.to_dict().get("preserve_session"):
             try:
-                with open(config.to_dict().get("preserve_session")+"/token.txt", 'r') as file:
+                with open(config.to_dict().get("preserve_session") + "/token.txt", 'r') as file:
                     client.access_token = file.read()
             except FileNotFoundError:
                 try:
@@ -130,7 +129,6 @@ class Bot:
                 client.access_token = creds['access_token']
         else:
             client.access_token = creds['access_token']
-
 
         try_again = False
 
@@ -157,7 +155,7 @@ class Bot:
                                 and recursion < 3:
                             print("Invalid Access Token, creating new session")
                             try_again = True
-                            with open(config.to_dict().get('preserve_session')+'/token.txt', 'w') as file:
+                            with open(config.to_dict().get('preserve_session') + '/token.txt', 'w') as file:
                                 file.write(config.to_dict()['creds']['access_token'])
                             break
                         else:
@@ -182,7 +180,7 @@ class Bot:
                 f"Connected ({self.__class__.__name__}) to {creds['homeserver']} as {client.user_id} ({creds['device_id']})")
 
         if try_again:
-            client = await self.login(config, recursion+1)
+            client = await self.login(config, recursion + 1)
 
         return client
 
@@ -220,10 +218,12 @@ class Bot:
 
             if hasattr(value, '_on_reaction'):
                 value = partial(value, self)
+
                 def check_type(func):
                     async def wrapper(room, event_):
                         if event_.type == 'm.reaction':
                             await func(room, event_, event_.source['content']['m.relates_to']['key'])
+
                     return wrapper
 
                 client.add_event_callback(check_type(value), UnknownEvent)

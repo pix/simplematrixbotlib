@@ -6,7 +6,8 @@ from dataclasses import dataclass
 import sly.yacc
 from sly import Lexer, Parser
 
-sly.yacc.SlyLogger.warning = lambda *args: None # Disable SLY Warnings
+sly.yacc.SlyLogger.warning = lambda *args: None  # Disable SLY Warnings
+
 
 class ParseError(ValueError): pass
 

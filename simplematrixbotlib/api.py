@@ -137,6 +137,7 @@ class Api:
 
         await self.room_send(room_id, "m.room.message", content)
 
+
 class LegacyApi:
     """
     A class to interact with the matrix-nio library. Usually used by the Bot class, and sparingly by the bot developer.
