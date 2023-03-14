@@ -158,7 +158,6 @@ class Bot:
                             print("Invalid Access Token, creating new session")
                             try_again = True
                             with open(config.to_dict().get('preserve_session')+'/token.txt', 'w') as file:
-                                print(config.to_dict())
                                 file.write(config.to_dict()['creds']['access_token'])
                             break
                         else:
