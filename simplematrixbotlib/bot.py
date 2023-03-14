@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 import signal
 import typing
 from functools import partial
@@ -10,6 +11,7 @@ from typing import List
 import aiohttp
 import nio
 from nio import SyncResponse, AsyncClient, UnknownEvent
+from simplematrixbotlib.creds import CredsError
 
 import simplematrixbotlib as botlib
 
@@ -112,39 +114,75 @@ class Bot:
 
         await self.async_client.sync_forever(timeout=3000, full_state=True)
 
-    async def login(self, config):
+    async def login(self, config, recursion=0):
         creds = config.to_dict()['creds']
         client = AsyncClient(homeserver=creds['homeserver'])
-        client.access_token = creds['access_token']
 
-        async with aiohttp.ClientSession() as session:
-            async with session.get(
-                    f'{creds["homeserver"]}/_matrix/client/r0/account/whoami?access_token={creds["access_token"]}'
-            ) as response:
-                if isinstance(response, nio.responses.LoginError):
-                    raise Exception(response)
+        if config.to_dict().get("preserve_session"):
+            try:
+                with open(config.to_dict().get("preserve_session")+"/token.txt", 'r') as file:
+                    client.access_token = file.read()
+            except FileNotFoundError:
+                try:
+                    os.mkdir(config.to_dict().get("preserve_session"))
+                except FileExistsError:
+                    pass
+                client.access_token = creds['access_token']
+        else:
+            client.access_token = creds['access_token']
 
-                r = json.loads(
-                    (await
-                     response.text()).replace(":false,", ":\"false\","))
 
-                creds['device_id'] = r['device_id']
-                client.user_id = r['user_id']
+        try_again = False
 
-                if not client.user_id == creds['user_id']:
-                    raise ValueError(
-                        f"Given Matrix user id \'{creds['user_id']}\' does not match the user id \'{client.user_id}\' associated with the access token. "
-                        "This error prevents you from accidentally using the wrong account. "
-                        "Resolve this by providing the correct user id with your credentials, "
-                        # f"or reset your session by deleting {self.creds._session_stored_file}"
-                        # f"{' and ' + self.config.store_path if self.config.encryption_enabled else ''}."
-                    )
+        for _ in (True,):
+            async with aiohttp.ClientSession() as session:
+                async with session.get(
+                        f'{creds["homeserver"]}/_matrix/client/r0/account/whoami?access_token={client.access_token}'
+                ) as response:
 
-        if client.should_upload_keys:
-            await client.keys_upload()
+                    r = json.loads(
+                        (await
+                         response.text()).replace(":false,", ":\"false\","))
 
-        print(
-            f"Connected ({self.__class__.__name__}) to {creds['homeserver']} as {client.user_id} ({creds['device_id']})")
+                    try:
+                        creds['device_id'] = r['device_id']
+                        with open(config.to_dict().get("preserve_session") + "/token.txt", 'w') as file:
+                            creds['access_token'] = client.access_token
+                            file.write(creds['access_token'])
+                    except KeyError:
+                        recover_session = config.to_dict().get('recover_session', False)
+                        if config.to_dict().get('preserve_session') \
+                                and recover_session \
+                                and (not str.lower(str(recover_session)) == "false") \
+                                and recursion < 3:
+                            print("Invalid Access Token, creating new session")
+                            try_again = True
+                            with open(config.to_dict().get('preserve_session')+'/token.txt', 'w') as file:
+                                file.write(config.to_dict()['creds']['access_token'])
+                            break
+                        else:
+                            raise CredsError(
+                                f"Invalid Access Token. You may need to delete the directory located at {config.to_dict().get('preserve_session')} or set \"recover_session\" to True.")
+
+                    client.user_id = r['user_id']
+
+                    if not client.user_id == creds['user_id']:
+                        raise ValueError(
+                            f"Given Matrix user id \'{creds['user_id']}\' does not match the user id \'{client.user_id}\' associated with the access token. "
+                            "This error prevents you from accidentally using the wrong account. "
+                            "Resolve this by providing the correct user id with your credentials, "
+                            # f"or reset your session by deleting {self.creds._session_stored_file}"
+                            # f"{' and ' + self.config.store_path if self.config.encryption_enabled else ''}."
+                        )
+
+            if client.should_upload_keys:
+                await client.keys_upload()
+
+            print(
+                f"Connected ({self.__class__.__name__}) to {creds['homeserver']} as {client.user_id} ({creds['device_id']})")
+
+        if try_again:
+            client = await self.login(config, recursion+1)
 
         return client
 

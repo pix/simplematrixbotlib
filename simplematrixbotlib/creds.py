@@ -45,6 +45,7 @@ class Creds:
                     if json.loads((await resp.text()).replace(":false,", ":\"false\",")
                                   )['user_id'] == self._dict['user_id']:
                         self._dict['access_token'] = access_token
+                        self._dict["_from_access_token"] = True
                         return self._dict
                     else:
                         raise CredsError(f"Failed to confirm access_token: {resp=}")
