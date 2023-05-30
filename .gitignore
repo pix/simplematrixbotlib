@@ -9,3 +9,4 @@ dist/
 .mypy_cache/
 /tests/config/sample_config_files/config_tmp.toml
 poetry.lock
+.gitignore
