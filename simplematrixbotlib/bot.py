@@ -3,6 +3,8 @@ import sys
 from typing import Optional
 import simplematrixbotlib as botlib
 from nio import SyncResponse, AsyncClient
+import cryptography
+import os
 
 
 class Bot:
@@ -41,7 +43,13 @@ class Bot:
         self.callbacks: botlib.Callbacks = None
 
     async def main(self):
-        self.creds.session_read_file()
+        try:
+            self.creds.session_read_file()
+        except cryptography.fernet.InvalidToken:
+            print("Invalid Stored Token")
+            print("Regenerating token from provided credentials")
+            os.remove(self.creds._session_stored_file)
+            self.creds.session_read_file()
 
         if not (await botlib.api.check_valid_homeserver(self.creds.homeserver
                                                         )):
