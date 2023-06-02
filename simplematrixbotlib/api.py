@@ -116,6 +116,12 @@ class Api:
                     r = json.loads(
                         (await
                          response.text()).replace(":false,", ":\"false\","))
+                    # This assumes there was an error that needs to be communicated to the user. A key error happens in
+                    # the absence of an error code -> everything fine, we pass
+                    try:
+                        raise ConnectionError(f"{r['errcode']}: {r['error']}")
+                    except KeyError:
+                        pass
                     device_id = r['device_id']
                     self.async_client.user_id, user_id = (r['user_id'],
                                                           r['user_id'])
