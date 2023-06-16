@@ -1,5 +1,24 @@
 # Changelog
 
+## [v2.9.0](https://codeberg.org/imbev/simplematrixbotlib/src/tag/v2.8.0)
+##  2023-06-06 ##########
+###  Notes:
+- Improvements :)
+### Additions:
+- Add sending of reactions
+- Add recovery if stored access token is invalid
+- Show proper error message when connection fails
+### Modifications
+- Improve api docs
+- Fix circular import bug
+- Update matrix-nio dependency to 0.20
+- Update pillow dependency to 9.0
+### Removals:
+- None
+### Deprecations
+- None
+
+
 ## [v2.8.0](https://codeberg.org/imbev/simplematrixbotlib/src/tag/v2.8.0)
 ##  2022-11-08 9fcf053105
 ###  Notes:
