@@ -1,7 +1,7 @@
 # Changelog
 
 ## [v2.9.0](https://codeberg.org/imbev/simplematrixbotlib/src/tag/v2.8.0)
-##  2023-06-06 ##########
+##  2023-06-06 3ad5b73f8f
 ###  Notes:
 - Improvements :)
 ### Additions:
