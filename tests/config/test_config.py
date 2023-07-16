@@ -32,6 +32,7 @@ class UpperConfig(botlib.Config):
 def test_defaults():
     config = botlib.Config()
 
+    assert config.timeout
     assert config.join_on_invite
     assert config.allowlist == set()
     assert config.blocklist == set()
@@ -51,6 +52,7 @@ def test_read_toml():
     config = botlib.Config()
     # load non-defaults
     config.load_toml(os.path.join(sample_config_path, 'config1.toml'))
+    assert config.timeout == 65536
     assert not config.join_on_invite
     assert set(config.allowlist) == set(
         map(re.compile, ['.*:example\\.org', '@test:matrix\\.org']))
@@ -102,6 +104,7 @@ def test_write_toml():
 
     default_values = (
         "[simplematrixbotlib.config]\n"
+        "timeout = 65536\n"
         "join_on_invite = true\n"
         f"encryption_enabled = {'true' if ENCRYPTION_ENABLED else 'false'}\n"
         "emoji_verify = false\n"
@@ -134,6 +137,10 @@ def test_write_toml():
 
 def test_manual_set():
     config = botlib.Config()
+
+    config.timeout = 180000
+    assert config.timeout == 180000
+
     config.join_on_invite = True
     assert config.join_on_invite
 

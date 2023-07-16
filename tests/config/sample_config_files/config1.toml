@@ -1,4 +1,5 @@
 [simplematrixbotlib.config]
+timeout = 65536
 join_on_invite = false
 allowlist = [".*:example\\.org", "@test:matrix\\.org"]
 blocklist = ["@test2:example\\.org"]
