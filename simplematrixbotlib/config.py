@@ -10,10 +10,16 @@ def _config_dict_factory(tmp) -> dict:
     return {
         'simplematrixbotlib': {
             'config':
-            {_strip_leading_underscore(name): value
+            {_strip_leading_underscore(name): _extract_pattern_if_neccessary(value)
              for name, value in tmp}
         }
     }
+
+def _extract_pattern_if_neccessary(value):
+    try:
+        return value.pattern
+    except AttributeError:
+        return value
 
 
 def _strip_leading_underscore(tmp: str) -> str:
