@@ -1,6 +1,19 @@
 # Changelog
 
-## [v2.9.0](https://codeberg.org/imbev/simplematrixbotlib/src/tag/v2.8.0)
+## [v2.9.1](https://codeberg.org/imbev/simplematrixbotlib/src/tag/v2.9.1)
+##  2023-07-24 0ad993e640
+###  Notes:
+- Bugfix, Improvements :)
+### Additions:
+- None
+### Modifications
+- Fix #43, Error on allow (adding to allowlist)
+### Removals:
+- None
+### Deprecations
+- None
+
+## [v2.9.0](https://codeberg.org/imbev/simplematrixbotlib/src/tag/v2.9.0)
 ##  2023-06-06 3ad5b73f8f
 ###  Notes:
 - Improvements :)
