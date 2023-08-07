@@ -18,6 +18,10 @@ print(config.join_on_invite)
 
 See also: [Additional Methods](#additional-methods)
 
+#### `timeout`
+Number: Connection timeout for the Matrix client (in milliseconds).
+Defaults to 65536.
+
 #### `join_on_invite`
 Boolean: whether the bot accepts all invites automatically.
 

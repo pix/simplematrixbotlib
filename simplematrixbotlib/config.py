@@ -21,7 +21,6 @@ def _extract_pattern_if_neccessary(value):
     except AttributeError:
         return value
 
-
 def _strip_leading_underscore(tmp: str) -> str:
     return tmp[1:] if tmp[0] == '_' else tmp
 
@@ -47,6 +46,7 @@ class Config:
     Can be inherited from by bot developers to implement custom settings.
     """
 
+    _timeout: int = 65536
     _join_on_invite: bool = True
     _encryption_enabled: bool = ENCRYPTION_ENABLED
     _emoji_verify: bool = False  # So users who enable it are aware of required interactivity
@@ -78,6 +78,20 @@ class Config:
         tmp = asdict(self, dict_factory=_config_dict_factory)
         with open(file_path, 'w') as file:
             toml.dump(tmp, file)
+
+    @property
+    def timeout(self) -> int:
+        """
+        Returns
+        -------
+        int
+            Connection timeout for the Matrix client (in milliseconds)
+        """
+        return self._timeout
+
+    @timeout.setter
+    def timeout(self, value: int) -> None:
+        self._timeout = value
 
     @property
     def join_on_invite(self) -> bool:
