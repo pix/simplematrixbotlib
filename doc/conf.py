@@ -18,11 +18,11 @@ import sphinx_rtd_theme
 # -- Project information -----------------------------------------------------
 
 project = 'Simple-Matrix-Bot-Lib'
-copyright = '2021, KrazyKirby99999'
-author = 'KrazyKirby99999'
+copyright = '2023, Isaac Beverly'
+author = 'Isaac Beverly'
 
 # The full version, including alpha/beta/rc tags
-release = '2.9.1'
+release = '2.10.0'
 
 # -- General configuration ---------------------------------------------------
 
