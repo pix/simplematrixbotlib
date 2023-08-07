@@ -1,5 +1,18 @@
 # Changelog
 
+## [v2.10.0](https://codeberg.org/imbev/simplematrixbotlib/src/tag/v2.10.0)
+##  2023-07-24 308ab49be
+###  Notes:
+- Improvements :)
+### Additions:
+- Add configuration of connection timeout
+### Modifications
+- None
+### Removals:
+- None
+### Deprecations
+- None
+
 ## [v2.9.1](https://codeberg.org/imbev/simplematrixbotlib/src/tag/v2.9.1)
 ##  2023-07-24 0ad993e640
 ###  Notes:
