@@ -287,7 +287,7 @@ class Api:
                                   "body": message,
                                   "format": "org.matrix.custom.html",
                                   "formatted_body": markdown.markdown(message,
-                                                                      extensions=['nl2br'])
+                                                                      extensions=['fenced_code', 'nl2br'])
                               })
 
     async def send_reaction(self, room_id: str, event, key: str):
