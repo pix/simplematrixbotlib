@@ -28,7 +28,7 @@ classifiers = [
 python = "^3.8"
 matrix-nio = "^0.20"
 python-cryptography-fernet-wrapper = "^1.0.4"
-pillow = "^9.0"
+pillow = "^10.0.1"
 markdown = "^3.3"
 toml = "^0.10.2"
 
