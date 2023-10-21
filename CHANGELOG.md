@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.10.2
+### 2023-10-21
+* Bump Pillow version to fix CVE
+
 ## [v2.10.1](https://codeberg.org/imbev/simplematrixbotlib/src/tag/v2.10.1)
 ##  2023-07-24 98f933803e
 ###  Notes:
