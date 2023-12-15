@@ -1,5 +1,9 @@
 # Changelog
 
+## v2.10.3
+### 2023-12-15
+* Bump matrix-nio version
+
 ## v2.10.2
 ### 2023-10-21
 * Bump Pillow version to fix CVE
