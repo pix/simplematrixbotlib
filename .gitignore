@@ -11,3 +11,4 @@ dist/
 .idea
 session.txt
 echo.py
+/poetry.lock

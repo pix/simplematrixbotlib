@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "simplematrixbotlib"
-version = "2.10.2"
+version = "2.10.3"
 description = "An easy to use bot library for the Matrix ecosystem written in Python."
 authors = ["imbev <imbev@protonmail.com>"]
 license = "MIT"
@@ -26,7 +26,7 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = "^3.8"
-matrix-nio = "^0.20"
+matrix-nio = "^0.23"
 python-cryptography-fernet-wrapper = "^1.0.4"
 pillow = "^10.0.1"
 markdown = "^3.3"
