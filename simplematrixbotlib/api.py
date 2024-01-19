@@ -190,7 +190,8 @@ class Api:
                          room_id: str,
                          content: dict,
                          message_type: str = "m.room.message",
-                         ignore_unverified_devices: bool = None):
+                         ignore_unverified_devices: bool = None,
+                         reply_to: str = "")
         """
         Send a custom event in a Matrix room.
 
@@ -208,7 +209,17 @@ class Api:
         ignore_unverified_devices : bool, optional
             Whether to ignore that devices are not verified and send the
             message to them regardless on a per-message basis.
+
+        reply_to : str, optional
+            The event id for replying message.
         """
+
+        if reply_to != "":
+            content['m.relates_to'] = {
+                "m.in_reply_to" : {
+                    "event_id" : reply_to
+                }
+            }
 
         try:
             await self.async_client.room_send(
@@ -243,7 +254,7 @@ class Api:
                 ignore_unverified_devices=ignore_unverified_devices
                                           or self.config.ignore_unverified_devices)
 
-    async def send_text_message(self, room_id: str, message: str, msgtype: str = "m.text"):
+    async def send_text_message(self, room_id: str, message: str, msgtype: str = "m.text", reply_to: str = ""):
         """
         Send a text message in a Matrix room.
 
@@ -257,13 +268,17 @@ class Api:
 
         msgtype : str, optional
             The type of message to send: m.text (default), m.notice, etc
+
+        reply_to : str, optional
+            The event id for replying message.
         """
 
         await self._send_room(room_id=room_id,
                               content={
                                   "msgtype": msgtype,
                                   "body": message
-                              })
+                              },
+                              reply_to=reply_to)
 
     async def send_markdown_message(self, room_id: str, message, msgtype: str = "m.text"):
         """
@@ -279,6 +294,9 @@ class Api:
 
         msgtype : str, optional
             The type of message to send: m.text (default), m.notice, etc
+
+        reply_to : str, optional
+            The event id for replying message.
         """
 
         await self._send_room(room_id=room_id,
@@ -288,7 +306,8 @@ class Api:
                                   "format": "org.matrix.custom.html",
                                   "formatted_body": markdown.markdown(message,
                                                                       extensions=['fenced_code', 'nl2br'])
-                              })
+                              },
+                              reply_to=reply_to)
 
     async def send_reaction(self, room_id: str, event, key: str):
         """
@@ -318,7 +337,7 @@ class Api:
             message_type="m.reaction"
         )
 
-    async def send_image_message(self, room_id: str, image_filepath: str):
+    async def send_image_message(self, room_id: str, image_filepath: str, reply_to: str = ""):
         """
         Send an image message in a Matrix room.
 
@@ -329,6 +348,9 @@ class Api:
 
         image_filepath : str
             The path to the image on your machine.
+
+        reply_to : str, optional
+            The event id for replying message.
         """
 
         mime_type = mimetypes.guess_type(image_filepath)[0]
@@ -363,11 +385,11 @@ class Api:
         }
 
         try:
-            await self._send_room(room_id=room_id, content=content)
+            await self._send_room(room_id=room_id, content=content, reply_to=reply_to)
         except:
             print(f"Failed to send image file {image_filepath}")
 
-    async def send_video_message(self, room_id: str, video_filepath: str):
+    async def send_video_message(self, room_id: str, video_filepath: str, reply_to: str = ""):
         """
         Send a video message in a Matrix room.
 
@@ -378,6 +400,9 @@ class Api:
 
         video_filepath : str
             The path to the video on your machine.
+
+        reply_to : str, optional
+            The event id for replying message.
         """
 
         mime_type = mimetypes.guess_type(video_filepath)[0]
@@ -407,6 +432,6 @@ class Api:
         }
 
         try:
-            await self._send_room(room_id=room_id, content=content)
+            await self._send_room(room_id=room_id, content=content, reply_to=reply_to)
         except:
             print(f"Failed to send video file {video_filepath}")
