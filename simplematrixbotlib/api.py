@@ -337,7 +337,7 @@ class Api:
             message_type="m.reaction"
         )
 
-    async def send_image_message(self, room_id: str, image_filepath: str, reply_to: str = ""):
+    async def send_image_message(self, room_id: str, image_filepath: str, reply_to: str = "", message: str = ""):
         """
         Send an image message in a Matrix room.
 
@@ -351,6 +351,9 @@ class Api:
 
         reply_to : str, optional
             The event id for replying message.
+
+        message : str, optional
+            The content of the message to be sent, defaults to image filename basename.
         """
 
         mime_type = mimetypes.guess_type(image_filepath)[0]
@@ -370,8 +373,11 @@ class Api:
         else:
             print(f"Failed Upload Response: {resp}")
 
+        if message == "":
+            message = os.path.basename(image_filepath)
+
         content = {
-            "body": os.path.basename(image_filepath),
+            "body": message,
             "info": {
                 "size": file_stat.st_size,
                 "mimetype": mime_type,
@@ -389,7 +395,7 @@ class Api:
         except:
             print(f"Failed to send image file {image_filepath}")
 
-    async def send_video_message(self, room_id: str, video_filepath: str, reply_to: str = ""):
+    async def send_video_message(self, room_id: str, video_filepath: str, reply_to: str = "", message: str = ""):
         """
         Send a video message in a Matrix room.
 
@@ -403,6 +409,9 @@ class Api:
 
         reply_to : str, optional
             The event id for replying message.
+
+        message : str, optional
+            The content of the message to be sent, defaults to video filename basename.
         """
 
         mime_type = mimetypes.guess_type(video_filepath)[0]
@@ -420,8 +429,11 @@ class Api:
         else:
             print(f"Failed Upload Response: {resp}")
 
+        if message == "":
+            message = os.path.basename(video_filepath)
+
         content = {
-            "body": os.path.basename(video_filepath),
+            "body": message,
             "info": {
                 "size": file_stat.st_size,
                 "mimetype": mime_type,
