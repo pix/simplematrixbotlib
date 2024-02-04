@@ -86,7 +86,14 @@ class Bot:
             for room_id in self.async_client.rooms:
                 await action(room_id)
 
-        await self.async_client.sync_forever(timeout=3000, full_state=True)
+        try:
+            await self.async_client.sync_forever(timeout=3000, full_state=True)
+        except Exception as e:
+            print(f"Error: {e}")
+            await self.async_client.close()
+        finally:
+            print("Shutting down")
+            sys.exit(1)
 
     def run(self):
         """
