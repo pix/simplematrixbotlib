@@ -93,7 +93,7 @@ class Bot:
             await self.async_client.close()
         finally:
             print("Shutting down")
-            sys.exit(1)
+            os._exit(1)
 
     def run(self):
         """
