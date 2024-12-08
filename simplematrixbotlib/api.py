@@ -190,8 +190,7 @@ class Api:
                          room_id: str,
                          content: dict,
                          message_type: str = "m.room.message",
-                         ignore_unverified_devices: bool = None,
-                         reply_to: str = ""):
+                         ignore_unverified_devices: bool = None):
         """
         Send a custom event in a Matrix room.
 
@@ -209,17 +208,7 @@ class Api:
         ignore_unverified_devices : bool, optional
             Whether to ignore that devices are not verified and send the
             message to them regardless on a per-message basis.
-
-        reply_to : str, optional
-            The event id for replying message.
         """
-
-        if reply_to != "":
-            content['m.relates_to'] = {
-                "m.in_reply_to" : {
-                    "event_id" : reply_to
-                }
-            }
 
         try:
             await self.async_client.room_send(
@@ -269,16 +258,26 @@ class Api:
         msgtype : str, optional
             The type of message to send: m.text (default), m.notice, etc
 
+
         reply_to : str, optional
             The event id for replying message.
         """
 
-        await self._send_room(room_id=room_id,
-                              content={
-                                  "msgtype": msgtype,
-                                  "body": message
-                              },
-                              reply_to=reply_to)
+        content = {
+            "msgtype" : msgtype,
+            "body" : message,
+        }
+
+        if reply_to != "":
+            content['m.relates_to'] = {
+                "m.in_reply_to" : {
+                    "event_id" : reply_to
+                }
+            }
+
+
+        await self._send_room(room_id=room_id, content=content)
+
 
     async def send_markdown_message(self, room_id: str, message, msgtype: str = "m.text", reply_to: str = ""):
         """
@@ -307,7 +306,7 @@ class Api:
                                               extensions=['fenced_code', 'nl2br'])
         }
         
-        if reply_to:
+        if reply_to != "":
             content['m.relates_to'] = {
                 "m.in_reply_to" : {
                     "event_id" : reply_to
@@ -375,7 +374,8 @@ class Api:
                 file,
                 content_type=mime_type,
                 filename=os.path.basename(image_filepath),
-                filesize=file_stat.st_size)
+                filesize=file_stat.st_size,
+                encrypt=self.config.encryption_enabled)
         if isinstance(resp, UploadResponse):
             pass  # Successful upload
         else:
@@ -398,14 +398,32 @@ class Api:
             "url": resp.content_uri
         }
 
+        if self.config.encryption_enabled:
+            content["file"] = {
+                "url": resp.content_uri,
+                "key": maybe_keys["key"],
+                "iv": maybe_keys["iv"],
+                "hashes": maybe_keys["hashes"],
+                "v": maybe_keys["v"],
+            }
+
+        if reply_to != "":
+            content['m.relates_to'] = {
+                "m.in_reply_to": {
+                    "event_id": reply_to
+                }
+            }
+
         try:
-            await self._send_room(room_id=room_id, content=content, reply_to=reply_to)
+            await self._send_room(room_id=room_id, content=content)
         except:
             print(f"Failed to send image file {image_filepath}")
 
-    async def send_video_message(self, room_id: str, video_filepath: str, reply_to: str = "", message: str = ""):
+
+
+    async def send_video_message(self, room_id: str, video_filepath: str, reply_to: str = "", message: str = "", thumbnail_filepath: str = None):
         """
-        Send a video message in a Matrix room.
+        Send a video message in a Matrix room with optional thumbnail.
 
         Parameters
         ----------
@@ -420,22 +438,25 @@ class Api:
 
         message : str, optional
             The content of the message to be sent, defaults to video filename basename.
+
+        thumbnail_filepath : str, optional
+            The path to the thumbnail image for the video.
         """
 
+        # Upload the video
         mime_type = mimetypes.guess_type(video_filepath)[0]
-
         file_stat = await aiofiles.os.stat(video_filepath)
         async with aiofiles.open(video_filepath, "r+b") as file:
             resp, maybe_keys = await self.async_client.upload(
                 file,
                 content_type=mime_type,
                 filename=os.path.basename(video_filepath),
-                filesize=file_stat.st_size)
+                filesize=file_stat.st_size,
+                encrypt=self.config.encryption_enabled)
 
-        if isinstance(resp, UploadResponse):
-            pass  # Successful upload
-        else:
+        if not isinstance(resp, UploadResponse):
             print(f"Failed Upload Response: {resp}")
+            return
 
         if message == "":
             message = os.path.basename(video_filepath)
@@ -445,13 +466,65 @@ class Api:
             "info": {
                 "size": file_stat.st_size,
                 "mimetype": mime_type,
-                "thumbnail_info": None
+                "thumbnail_info": None,
+                "thumbnail_url": None
             },
             "msgtype": "m.video",
             "url": resp.content_uri
         }
 
+        if self.config.encryption_enabled:
+            content["file"] = {
+                "url": resp.content_uri,
+                "key": maybe_keys["key"],
+                "iv": maybe_keys["iv"],
+                "hashes": maybe_keys["hashes"],
+                "v": maybe_keys["v"],
+            }
+
+        # Handle optional thumbnail
+        if thumbnail_filepath:
+            image = Image.open(thumbnail_filepath)
+            thumb_mime_type = Image.MIME.get(image.format)
+            (width, height) = image.size
+
+            thumb_stat = await aiofiles.os.stat(thumbnail_filepath)
+            async with aiofiles.open(thumbnail_filepath, "r+b") as thumb_file:
+                thumb_resp, thumb_keys = await self.async_client.upload(
+                    thumb_file,
+                    content_type=thumb_mime_type,
+                    filename=os.path.basename(thumbnail_filepath),
+                    filesize=thumb_stat.st_size,
+                    encrypt=self.config.encryption_enabled)
+
+            if isinstance(thumb_resp, UploadResponse):
+                content["info"]["thumbnail_info"] = {
+                    "mimetype": thumb_mime_type,
+                    "size": thumb_stat.st_size,
+                    "w": width,
+                    "h": height
+                }
+                content["info"]["thumbnail_url"] = thumb_resp.content_uri
+
+                # if self.config.encryption_enabled:
+                #     content["info"]["thumbnail_file"] = {
+                #         "url": thumb_resp.content_uri,
+                #         "key": thumb_keys["key"],
+                #         "iv": thumb_keys["iv"],
+                #         "hashes": thumb_keys["hashes"],
+                #         "v": thumb_keys["v"],
+                #     }
+            else:
+                print(f"Failed Thumbnail Upload Response: {thumb_resp}")
+
+        if reply_to != "":
+            content['m.relates_to'] = {
+                "m.in_reply_to": {
+                    "event_id": reply_to
+                }
+            }
+
         try:
-            await self._send_room(room_id=room_id, content=content, reply_to=reply_to)
-        except:
-            print(f"Failed to send video file {video_filepath}")
+            await self._send_room(room_id=room_id, content=content)
+        except Exception as e:
+            print(f"Failed to send video file {video_filepath}: {e}")
