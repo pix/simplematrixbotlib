@@ -344,7 +344,38 @@ class Api:
             message_type="m.reaction"
         )
 
-    async def send_image_message(self, room_id: str, image_filepath: str, reply_to: str = "", message: str = ""):
+    async def edit(self, room_id: str, message: str, event_id: str, msgtype: str = "m.text"):
+        """
+        Edit an event in a Matrix room.
+
+        room_id : str
+            The room id of the destination of the message.
+
+        message : str
+            The new content of the message to be sent.
+
+        event_id : str
+            The event id of the event you want to edit.
+
+        msgtype : str, optional
+            The type of new message to send: m.text (default), m.notice, etc
+        """
+
+        await self._send_room(room_id, {
+            "msgtype": "m.text",
+            "body": "* "+message,
+            "m.relates_to": {
+                "rel_type": "m.replace",
+                "event_id": event_id
+            },
+            "m.new_content": {
+                "msgtype": msgtype,
+                "body": message
+            }
+        })
+
+
+    async def send_image_message(self, room_id: str, image_filepath: str, reply_to: str = "", message: str = "", replace_event_id: str = ""):
         """
         Send an image message in a Matrix room.
 
@@ -413,12 +444,45 @@ class Api:
                     "event_id": reply_to
                 }
             }
+        elif replace_event_id != "":
+            content['m.relates_to'] = {
+                "rel_type": "m.replace",
+                "event_id": replace_event_id
+            }
+            content['m.new_content'] = {
+                "msgtype": "m.image",
+                "body": message,
+                "info": {
+                    "size": file_stat.st_size,
+                    "mimetype": mime_type,
+                    "thumbnail_info": None,
+                    "w": width,
+                    "h": height,
+                    "thumbnail_url": None
+                },
+                "url": resp.content_uri
+            }
+            if self.config.encryption_enabled:
+                content['m.new_content']['file'] = {
+                    "url": resp.content_uri,
+                    "key": maybe_keys["key"],
+                    "iv": maybe_keys["iv"],
+                    "hashes": maybe_keys["hashes"],
+                    "v": maybe_keys["v"],
+                }
 
+            del content['url']
+            del content['info']
+            if 'thumbnail_info' in content:
+                del content['thumbnail_info']
+            if 'file' in content:
+                del content['file']
+
+            content['msgtype'] = "m.text"
         try:
             await self._send_room(room_id=room_id, content=content)
         except:
             print(f"Failed to send image file {image_filepath}")
-
 
 
     async def send_video_message(self, room_id: str, video_filepath: str, reply_to: str = "", message: str = "", thumbnail_filepath: str = None):
