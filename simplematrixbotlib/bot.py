@@ -5,6 +5,7 @@ import simplematrixbotlib as botlib
 from nio import SyncResponse, AsyncClient
 import cryptography
 import os
+import traceback
 
 
 class Bot:
@@ -89,8 +90,9 @@ class Bot:
         try:
             await self.async_client.sync_forever(timeout=3000, full_state=True)
         except Exception as e:
-            print(f"Error: {e}")
+            traceback.print_exc()
             await self.async_client.close()
+            raise e
         finally:
             print("Shutting down")
             os._exit(1)

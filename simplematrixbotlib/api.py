@@ -243,12 +243,19 @@ class Api:
                 ignore_unverified_devices=ignore_unverified_devices
                                           or self.config.ignore_unverified_devices)
 
-    async def send_text_message(self, room_id: str, message: str, msgtype: str = "m.text", reply_to: str = ""):
+    async def send_text_message(
+        self,
+        room_id: str,
+        message: str,
+        msgtype: str = "m.text",
+        reply_to: str = "",
+        thread_id: str = ""
+    ):
         """
         Send a text message in a Matrix room.
 
         Parameters
-        -----------
+        ----------
         room_id : str
             The room id of the destination of the message.
 
@@ -256,30 +263,38 @@ class Api:
             The content of the message to be sent.
 
         msgtype : str, optional
-            The type of message to send: m.text (default), m.notice, etc
-
+            The type of message to send: m.text (default), m.notice, etc.
 
         reply_to : str, optional
-            The event id for replying message.
+            The event id for replying to a specific message in the main timeline.
+
+        thread_id : str, optional
+            The root event id for a thread. If set, the message will be posted
+            as part of that thread.
         """
 
         content = {
-            "msgtype" : msgtype,
-            "body" : message,
+            "msgtype": msgtype,
+            "body": message,
         }
 
-        if reply_to != "":
-            content['m.relates_to'] = {
-                "m.in_reply_to" : {
-                    "event_id" : reply_to
-                }
-            }
+        # Handle standard reply
+        if reply_to:
+            # If you are replying to a message in the main timeline or in a thread
+            content.setdefault("m.relates_to", {})
+            content["m.relates_to"]["m.in_reply_to"] = {"event_id": reply_to}
 
+        # Handle threaded reply
+        if thread_id:
+            # Mark this message as part of an m.thread relation
+            content.setdefault("m.relates_to", {})
+            content["m.relates_to"]["rel_type"] = "m.thread"
+            content["m.relates_to"]["event_id"] = thread_id
 
         await self._send_room(room_id=room_id, content=content)
 
 
-    async def send_markdown_message(self, room_id: str, message, msgtype: str = "m.text", reply_to: str = ""):
+    async def send_markdown_message(self, room_id: str, message, msgtype: str = "m.text", reply_to: str = "", thread_id: str = ""):
         """
         Send a markdown message in a Matrix room.
 
@@ -295,7 +310,11 @@ class Api:
             The type of message to send: m.text (default), m.notice, etc
 
         reply_to : str, optional
-            The event id for replying message.
+            The event id for replying to a specific message in the main timeline.
+
+        thread_id : str, optional
+            The root event id for a thread. If set, the message will be posted
+            as part of that thread.
         """
 
         content = {
@@ -306,15 +325,20 @@ class Api:
                                               extensions=['fenced_code', 'nl2br'])
         }
         
-        if reply_to != "":
-            content['m.relates_to'] = {
-                "m.in_reply_to" : {
-                    "event_id" : reply_to
-                }
-            }
+        # Handle standard reply
+        if reply_to:
+            # If you are replying to a message in the main timeline or in a thread
+            content.setdefault("m.relates_to", {})
+            content["m.relates_to"]["m.in_reply_to"] = {"event_id": reply_to}
 
-        await self._send_room(room_id=room_id,
-                              content=content)
+        # Handle threaded reply
+        if thread_id:
+            # Mark this message as part of an m.thread relation
+            content.setdefault("m.relates_to", {})
+            content["m.relates_to"]["rel_type"] = "m.thread"
+            content["m.relates_to"]["event_id"] = thread_id
+
+        await self._send_room(room_id=room_id, content=content)
 
     async def send_reaction(self, room_id: str, event, key: str):
         """
