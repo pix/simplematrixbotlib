@@ -1,5 +1,6 @@
 from __future__ import annotations
 import json
+import sys
 from nio import (AsyncClient, AsyncClientConfig)
 from nio.exceptions import OlmUnverifiedDeviceError
 from nio.responses import UploadResponse
@@ -13,6 +14,12 @@ import aiohttp
 from typing import List, Tuple, Union
 import re
 import simplematrixbotlib
+
+try:
+    import ffmpeg
+    FFMPEG_AVAILABLE = True
+except ImportError:
+    FFMPEG_AVAILABLE = False
 
 
 async def check_valid_homeserver(homeserver: str) -> bool:
@@ -535,11 +542,29 @@ class Api:
             The content of the message to be sent, defaults to video filename basename.
 
         thumbnail_filepath : str, optional
-            The path to the thumbnail image for the video.
+            The path to the thumbnail image for the video. If not provided, will attempt to generate one.
 
         thread_id : str, optional
             The root event id for a thread. If set, the message will be posted as part of that thread.
         """
+        generated_thumbnail = False
+        if FFMPEG_AVAILABLE:
+            try:
+                # Generate thumbnail at 1 second mark
+                new_thumbnail_filepath = f"{video_filepath}_thumb.jpg"
+                (
+                    ffmpeg
+                    .input(video_filepath, ss=1)
+                    .filter('scale', 320, -1)
+                    .output(new_thumbnail_filepath, vframes=1)
+                    .overwrite_output()
+                    .run(capture_stdout=True, capture_stderr=True)
+                )
+                generated_thumbnail = True
+                thumbnail_filepath = new_thumbnail_filepath
+                print("Generated thumbnail", file=sys.stderr)
+            except Exception as e:
+                print(f"Failed to generate thumbnail: {e}", file=sys.stderr)
 
         # Upload the video
         mime_type = mimetypes.guess_type(video_filepath)[0]
@@ -560,16 +585,16 @@ class Api:
             message = os.path.basename(video_filepath)
 
         h, w, duration = None, None, None
-        try:
-            import ffmpeg
-            probe = ffmpeg.probe(video_filepath)
-            for stream in probe['streams']:
-                if stream['codec_type'] == 'video':
-                    h, w = stream['height'], stream['width']
-                if stream['codec_type'] == 'audio':
-                    duration = int(float(stream['duration']) * 1000)
-        except Exception as e:
-            print(f"Failed to probe video file {video_filepath}: {e}")
+        if FFMPEG_AVAILABLE:
+            try:
+                probe = ffmpeg.probe(video_filepath)
+                for stream in probe['streams']:
+                    if stream['codec_type'] == 'video':
+                        h, w = stream['height'], stream['width']
+                    if stream['codec_type'] == 'audio':
+                        duration = int(float(stream['duration']) * 1000)
+            except Exception as e:
+                print(f"Failed to probe video file {video_filepath}: {e}")
 
 
         content = {
@@ -601,38 +626,46 @@ class Api:
 
         # Handle optional thumbnail
         if thumbnail_filepath:
-            image = Image.open(thumbnail_filepath)
-            thumb_mime_type = Image.MIME.get(image.format)
-            (width, height) = image.size
+            try:
+                image = Image.open(thumbnail_filepath)
+                thumb_mime_type = Image.MIME.get(image.format)
+                (width, height) = image.size
 
-            thumb_stat = await aiofiles.os.stat(thumbnail_filepath)
-            async with aiofiles.open(thumbnail_filepath, "r+b") as thumb_file:
-                thumb_resp, thumb_keys = await self.async_client.upload(
-                    thumb_file,
-                    content_type=thumb_mime_type,
-                    filename=os.path.basename(thumbnail_filepath),
-                    filesize=thumb_stat.st_size,
-                    encrypt=self.config.encryption_enabled)
+                thumb_stat = await aiofiles.os.stat(thumbnail_filepath)
+                async with aiofiles.open(thumbnail_filepath, "r+b") as thumb_file:
+                    thumb_resp, thumb_keys = await self.async_client.upload(
+                        thumb_file,
+                        content_type=thumb_mime_type,
+                        filename=os.path.basename(thumbnail_filepath),
+                        filesize=thumb_stat.st_size,
+                        encrypt=self.config.encryption_enabled)
 
-            if isinstance(thumb_resp, UploadResponse):
-                content["info"]["thumbnail_info"] = {
-                    "mimetype": thumb_mime_type,
-                    "size": thumb_stat.st_size,
-                    "w": width,
-                    "h": height
-                }
-
-                # content["info"]["thumbnail_url"] = thumb_resp.content_uri
-                if self.config.encryption_enabled:
-                    content["info"]["thumbnail_file"] = {
-                        "url": thumb_resp.content_uri,
-                        "key": thumb_keys["key"],
-                        "iv": thumb_keys["iv"],
-                        "hashes": thumb_keys["hashes"],
-                        "v": thumb_keys["v"],
+                if isinstance(thumb_resp, UploadResponse):
+                    content["info"]["thumbnail_info"] = {
+                        "mimetype": thumb_mime_type,
+                        "size": thumb_stat.st_size,
+                        "w": width,
+                        "h": height
                     }
-            else:
-                print(f"Failed Thumbnail Upload Response: {thumb_resp}")
+
+                    # content["info"]["thumbnail_url"] = thumb_resp.content_uri
+                    if self.config.encryption_enabled:
+                        content["info"]["thumbnail_file"] = {
+                            "url": thumb_resp.content_uri,
+                            "key": thumb_keys["key"],
+                            "iv": thumb_keys["iv"],
+                            "hashes": thumb_keys["hashes"],
+                            "v": thumb_keys["v"],
+                        }
+                else:
+                    print(f"Failed Thumbnail Upload Response: {thumb_resp}")
+            finally:
+                # Clean up generated thumbnail
+                if generated_thumbnail:
+                    try:
+                        os.remove(thumbnail_filepath)
+                    except:
+                        pass
 
         if reply_to != "":
             content['m.relates_to'] = {
