@@ -399,7 +399,7 @@ class Api:
         })
 
 
-    async def send_image_message(self, room_id: str, image_filepath: str, reply_to: str = "", message: str = "", replace_event_id: str = ""):
+    async def send_image_message(self, room_id: str, image_filepath: str, reply_to: str = "", message: str = "", replace_event_id: str = "", thread_id: str = ""):
         """
         Send an image message in a Matrix room.
 
@@ -416,6 +416,9 @@ class Api:
 
         message : str, optional
             The content of the message to be sent, defaults to image filename basename.
+
+        thread_id : str, optional
+            The root event id for a thread. If set, the message will be posted as part of that thread.
         """
 
         mime_type = mimetypes.guess_type(image_filepath)[0]
@@ -461,13 +464,17 @@ class Api:
                 "hashes": maybe_keys["hashes"],
                 "v": maybe_keys["v"],
             }
+        # Handle threaded reply
+        if thread_id:
+            # Mark this message as part of an m.thread relation
+            content.setdefault("m.relates_to", {})
+            content["m.relates_to"]["rel_type"] = "m.thread"
+            content["m.relates_to"]["event_id"] = thread_id
 
         if reply_to != "":
-            content['m.relates_to'] = {
-                "m.in_reply_to": {
-                    "event_id": reply_to
-                }
-            }
+            content.setdefault("m.relates_to", {})
+            content["m.relates_to"]["m.in_reply_to"] = {"event_id": reply_to}
+
         elif replace_event_id != "":
             content['m.relates_to'] = {
                 "rel_type": "m.replace",
@@ -509,7 +516,7 @@ class Api:
             print(f"Failed to send image file {image_filepath}")
 
 
-    async def send_video_message(self, room_id: str, video_filepath: str, reply_to: str = "", message: str = "", thumbnail_filepath: str = None):
+    async def send_video_message(self, room_id: str, video_filepath: str, reply_to: str = "", message: str = "", thumbnail_filepath: str = None, thread_id: str = ""):
         """
         Send a video message in a Matrix room with optional thumbnail.
 
@@ -529,6 +536,9 @@ class Api:
 
         thumbnail_filepath : str, optional
             The path to the thumbnail image for the video.
+
+        thread_id : str, optional
+            The root event id for a thread. If set, the message will be posted as part of that thread.
         """
 
         # Upload the video
@@ -630,6 +640,11 @@ class Api:
                     "event_id": reply_to
                 }
             }
+        if thread_id:
+            # Mark this message as part of an m.thread relation
+            content.setdefault("m.relates_to", {})
+            content["m.relates_to"]["rel_type"] = "m.thread"
+            content["m.relates_to"]["event_id"] = thread_id
 
         try:
             await self._send_room(room_id=room_id, content=content)
