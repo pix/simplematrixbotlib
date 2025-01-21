@@ -557,7 +557,7 @@ class Api:
                 if stream['codec_type'] == 'video':
                     h, w = stream['height'], stream['width']
                 if stream['codec_type'] == 'audio':
-                    duration = stream['duration']
+                    duration = int(float(stream['duration']) * 1000)
         except Exception as e:
             print(f"Failed to probe video file {video_filepath}: {e}")
 
@@ -568,7 +568,7 @@ class Api:
                 "size": file_stat.st_size,
                 "mimetype": mime_type,
                 "thumbnail_info": None,
-                "thumbnail_url": None
+                # "thumbnail_url": None
             },
             "msgtype": "m.video",
             "url": resp.content_uri
@@ -611,16 +611,16 @@ class Api:
                     "w": width,
                     "h": height
                 }
-                content["info"]["thumbnail_url"] = thumb_resp.content_uri
 
-                # if self.config.encryption_enabled:
-                #     content["info"]["thumbnail_file"] = {
-                #         "url": thumb_resp.content_uri,
-                #         "key": thumb_keys["key"],
-                #         "iv": thumb_keys["iv"],
-                #         "hashes": thumb_keys["hashes"],
-                #         "v": thumb_keys["v"],
-                #     }
+                # content["info"]["thumbnail_url"] = thumb_resp.content_uri
+                if self.config.encryption_enabled:
+                    content["info"]["thumbnail_file"] = {
+                        "url": thumb_resp.content_uri,
+                        "key": thumb_keys["key"],
+                        "iv": thumb_keys["iv"],
+                        "hashes": thumb_keys["hashes"],
+                        "v": thumb_keys["v"],
+                    }
             else:
                 print(f"Failed Thumbnail Upload Response: {thumb_resp}")
 
