@@ -549,6 +549,19 @@ class Api:
         if message == "":
             message = os.path.basename(video_filepath)
 
+        h, w, duration = None, None, None
+        try:
+            import ffmpeg
+            probe = ffmpeg.probe(video_filepath)
+            for stream in probe['streams']:
+                if stream['codec_type'] == 'video':
+                    h, w = stream['height'], stream['width']
+                if stream['codec_type'] == 'audio':
+                    duration = stream['duration']
+        except Exception as e:
+            print(f"Failed to probe video file {video_filepath}: {e}")
+
+
         content = {
             "body": message,
             "info": {
@@ -560,6 +573,12 @@ class Api:
             "msgtype": "m.video",
             "url": resp.content_uri
         }
+
+        if h and w:
+            content["info"]["w"] = w
+            content["info"]["h"] = h
+        if duration:
+            content["info"]["duration"] = duration
 
         if self.config.encryption_enabled:
             content["file"] = {
